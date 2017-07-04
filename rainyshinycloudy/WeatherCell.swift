@@ -23,6 +23,7 @@ class WeatherCell: UITableViewCell {
         weatherType.text = forecast.weatherType
         weatherIcon.image = UIImage(named: forecast.weatherType)
         dayLabel.text = forecast.date
+
         }
     
 

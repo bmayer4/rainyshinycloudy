@@ -15,6 +15,10 @@ class Forecast {
     private var _highTemp: String!
     private var _lowTemp: String!
     
+    var weatherVC: WeatherVC!
+    
+    init() {}
+    
     var date: String {
         if _date == nil {
             _date = ""
@@ -43,7 +47,8 @@ class Forecast {
         return _lowTemp
     }
     
-    init(weatherDict: Dictionary<String, Any>) {
+
+        init(weatherDict: Dictionary<String, Any>) {
         if let temp = weatherDict["temp"] as? Dictionary<String, Any> {
         if let min = temp["min"] as? Double {
             let kelvinToFarenheit = round((min * (9/5) - 459.67))
@@ -55,7 +60,7 @@ class Forecast {
             let kelvinToFarenheit = round((max * (9/5) - 459.67))
             self._highTemp = "\(kelvinToFarenheit)"
             print(self._highTemp)
-        }
+            }
     
         }
         
@@ -63,7 +68,7 @@ class Forecast {
             if let main = weather[0]["main"] as? String {
                 self._weatherType = main
                 }
-            }
+        }
         
         if let date = weatherDict["dt"] as? Double {
             let unixConvertedDate = Date(timeIntervalSince1970: date)
@@ -73,10 +78,30 @@ class Forecast {
             df.timeStyle = .none
             self._date = unixConvertedDate.dayOfheWeek()
         }
-        
-        }
-        
     }
+    
+
+func downloadForecastData(completed: @escaping DownloadComplete) {
+    Alamofire.request(FORECAST_URL).responseJSON() { response in
+        let result = response.result
+        print(result.value!)
+        
+        if let dict = result.value as? Dictionary<String, Any> {
+            if let list = dict["list"] as? [Dictionary<String, Any>] {
+                for obj in list {
+                    let forecast = Forecast(weatherDict: obj)
+                    self.weatherVC.forecasts.append(forecast)
+                    print(obj)
+                }
+                self.weatherVC.forecasts.remove(at: 0)
+                self.weatherVC.tableView.reloadData()            }
+            }
+            completed()  //inside Alamofire block
+        }
+            }
+            
+        }
+
 
 extension Date {
     func dayOfheWeek() -> String {

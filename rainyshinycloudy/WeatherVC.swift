@@ -17,17 +17,18 @@ class WeatherVC: UIViewController, UITableViewDelegate, UITableViewDataSource, C
     @IBOutlet weak var locationLabel: UILabel!
     @IBOutlet weak var currentWeatherImage: UIImageView!
     @IBOutlet weak var currentWeatherTypeLabel: UILabel!
-    @IBOutlet weak var tableView: UITableView!
     
+    @IBOutlet weak var tableView: UITableView!
+
     let locationManager = CLLocationManager()
     var currentLocation: CLLocation!
     
     var currentWeather: CurrentWeather!
+    var forecast: Forecast!
     var forecasts = [Forecast]()
- 
+    
     override func viewDidLoad() {
         super.viewDidLoad()
-        
         
         locationManager.delegate = self
         locationManager.desiredAccuracy = kCLLocationAccuracyBest
@@ -36,15 +37,17 @@ class WeatherVC: UIViewController, UITableViewDelegate, UITableViewDataSource, C
         
         tableView.delegate = self
         tableView.dataSource = self
-        
+    
         currentWeather = CurrentWeather()  //should do di for this
+        forecast = Forecast()
+        self.forecast.weatherVC = self
     }
     
     override func viewDidAppear(_ animated: Bool) {  //appears before we download are weather details
         super.viewDidAppear(animated)
         locationAuthStatus()
-        
-    }
+        }
+    
     
     func locationAuthStatus() {
         if CLLocationManager.authorizationStatus() == .authorizedWhenInUse {
@@ -53,7 +56,8 @@ class WeatherVC: UIViewController, UITableViewDelegate, UITableViewDataSource, C
             Location.sharedInstance.longitude = currentLocation.coordinate.longitude
             print(currentLocation.coordinate.latitude, currentLocation.coordinate.longitude)
             currentWeather.downloadWeatherDetails {  //want location to be set before we run this
-                self.downloadForecastData {
+                self.forecast.downloadForecastData {
+                    //
                     self.updateMainUI()
                 }
             }
@@ -63,27 +67,29 @@ class WeatherVC: UIViewController, UITableViewDelegate, UITableViewDataSource, C
         }
     }
     
-    func downloadForecastData(completed: @escaping DownloadComplete) {
-        //downloading weather forecast data for tableview (teacher said put this in this file since table views are here..)
-        Alamofire.request(FORECAST_URL).responseJSON { response in
-            let result = response.result
-            print(result.value!)
-            
-            if let dict = result.value as? Dictionary<String, Any> {
-                if let list = dict["list"] as? [Dictionary<String, Any>] {
-                    for obj in list {
-                        let forecast = Forecast(weatherDict: obj)
-                        self.forecasts.append(forecast)
-                        print(obj)
-                    }
-                    self.forecasts.remove(at: 0)  //don't want todays date in table, want to start at tomorrows
-                    self.tableView.reloadData()
-                }
-            }
-            completed()
-        }
-        
-    }
+//    func downloadForecastData(completed: @escaping DownloadComplete) {
+//        //downloading weather forecast data for tableview (teacher said put this in this file since table views are here..)
+//        Alamofire.request(FORECAST_URL).responseJSON { response in
+//            let result = response.result
+//            print(result.value!)
+//            
+//            if let dict = result.value as? Dictionary<String, Any> {
+//                if let list = dict["list"] as? [Dictionary<String, Any>] {
+//                    for obj in list {
+//                        let forecast = Forecast(weatherDict: obj)
+//                        self.forecasts.append(forecast)
+//                        print(obj)
+//                    }
+//                    self.forecasts.remove(at: 0)
+//                    self.tableView.reloadData()
+//                }
+//            }
+//            completed()
+//        }
+//        
+//    }
+
+    
 
     func numberOfSections(in tableView: UITableView) -> Int {
         return 1  //default value, not required method
@@ -94,7 +100,6 @@ class WeatherVC: UIViewController, UITableViewDelegate, UITableViewDataSource, C
     }
     
     func tableView(_ tableView: UITableView, cellForRowAt indexPath: IndexPath) -> UITableViewCell {
-        
         if let cell = tableView.dequeueReusableCell(withIdentifier: "weatherCell", for: indexPath) as? WeatherCell {
             let forecast = forecasts[indexPath.row]
             cell.configureCell(forecast: forecast)
