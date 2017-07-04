@@ -40,7 +40,6 @@ class WeatherVC: UIViewController, UITableViewDelegate, UITableViewDataSource, C
     
         currentWeather = CurrentWeather()  //should do di for this
         forecast = Forecast()
-        self.forecast.weatherVC = self
     }
     
     override func viewDidAppear(_ animated: Bool) {  //appears before we download are weather details
@@ -56,18 +55,25 @@ class WeatherVC: UIViewController, UITableViewDelegate, UITableViewDataSource, C
             Location.sharedInstance.longitude = currentLocation.coordinate.longitude
             print(currentLocation.coordinate.latitude, currentLocation.coordinate.longitude)
             currentWeather.downloadWeatherDetails {  //want location to be set before we run this
-                self.forecast.downloadForecastData {
-                    //
+                self.forecast.downloadForecastData { (result) -> Void in
+                    switch result {
+                    case let .success(res):
+                    self.forecasts = res
+                    case let .failure(err):
+                        print("Error: \(err)")
+                    }
+                    self.forecasts.remove(at: 0)
+                    self.tableView.reloadData()  //wouldn't want to do this stuff in Forecast
                     self.updateMainUI()
                 }
             }
-        } else {
+                } else {
             locationManager.requestWhenInUseAuthorization()
             locationAuthStatus()
         }
     }
     
-//    func downloadForecastData(completed: @escaping DownloadComplete) {
+//    func downloadForecastData(completed: @escaping DownloadComplete) {  //THIS IS TEACHERS WAY
 //        //downloading weather forecast data for tableview (teacher said put this in this file since table views are here..)
 //        Alamofire.request(FORECAST_URL).responseJSON { response in
 //            let result = response.result

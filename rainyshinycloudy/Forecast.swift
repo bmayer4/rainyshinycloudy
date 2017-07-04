@@ -6,6 +6,12 @@
 //  Copyright © 2017 Devslopes. All rights reserved.
 //
 
+enum ForecastResult {
+    case success([Forecast])
+    case failure(Error)
+}
+
+
 import UIKit
 import Alamofire
 
@@ -15,7 +21,7 @@ class Forecast {
     private var _highTemp: String!
     private var _lowTemp: String!
     
-    var weatherVC: WeatherVC!
+    //var weatherVC: WeatherVC!  now I don't need an instance of my vc, bad practice, used callback instead
     
     init() {}
     
@@ -81,26 +87,34 @@ class Forecast {
     }
     
 
-func downloadForecastData(completed: @escaping DownloadComplete) {
+func downloadForecastData(completed: @escaping (ForecastResult) -> Void) {
     Alamofire.request(FORECAST_URL).responseJSON() { response in
         let result = response.result
         print(result.value!)
+        var forecastJSON = [Forecast]()
         
+        do {
         if let dict = result.value as? Dictionary<String, Any> {
             if let list = dict["list"] as? [Dictionary<String, Any>] {
                 for obj in list {
-                    let forecast = Forecast(weatherDict: obj)
-                    self.weatherVC.forecasts.append(forecast)
                     print(obj)
+                    let forecast = Forecast(weatherDict: obj)
+                     forecastJSON.append(forecast)
+                    }
                 }
-                self.weatherVC.forecasts.remove(at: 0)
-                self.weatherVC.tableView.reloadData()            }
             }
-            completed()  //inside Alamofire block
+            completed(.success(forecastJSON))  //inside Alamofire block
         }
-            }
-            
+        catch let err {
+            print("Error: \(err)")
+            completed(.failure(err))
         }
+
+    }
+}
+    
+    
+}
 
 
 extension Date {
